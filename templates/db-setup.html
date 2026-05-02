@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voterwa - Cloud Setup</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+    h2 { color: #003366; }
+    button { background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+    .status { margin-top: 20px; font-weight: bold; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Voterwa Cloud Setup</h2>
+    <p>Click to initialize the database on your Render server.</p>
+    <button onclick="initializeDB()">Initialize Server DB</button>
+    <div id="status" class="status">Waiting...</div>
+  </div>
+
+  <script>
+    async function initializeDB() {
+      const db = {
+        schools: [{
+          schoolCode: "SCH001",
+          schoolName: "ES Rugabano High School",
+          teachers: [{ code: "TCH001", name: "Mr. Severien" }],
+          students: [
+            { code: "STD001", name: "Dopebwoy" },
+            { code: "STD002", name: "Moses" },
+            { code: "STD003", name: "Aline" }
+          ],
+          settings: {
+            electionStatus: "stopped",
+            adminMessage: "Welcome to our 2026 Elections!",
+            customCategories: { left: ["HEADBOY"], right: ["HEADGIRL"] },
+            candidates: {},
+            votes: {},
+            votedStudents: {}
+          }
+        }]
+      };
+
+      document.getElementById('status').innerText = "Connecting to server...";
+      
+      try {
+        const response = await fetch('/api/save_db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(db)
+        });
+
+        if (response.ok) {
+          document.getElementById('status').innerText = "✅ Success! Server Database Created.";
+          document.getElementById('status').style.color = "green";
+          setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+        }
+      } catch (err) {
+        document.getElementById('status').innerText = "❌ Error connecting to server.";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -50,7 +50,7 @@
     }
 
     .controls { margin-bottom: 20px; width: 842px; display: flex; justify-content: space-between; }
-    .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold; }
+    .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold; text-decoration: none; display: inline-block; font-family: sans-serif; }
 
     /* 3. Critical Print Settings Fix */
     @media print {
@@ -62,7 +62,7 @@
         width: 100vw; 
         height: 100vh; 
         border-radius: 0;
-        padding: 10mm; /* Clean padding for printer margins */
+        padding: 10mm; 
       }
       .cachet-box { border-color: #eee; }
     }
@@ -80,7 +80,7 @@
     <div class="header-rw">REPUBLIC OF RWANDA</div>
     <h1>CERTIFICATE OF LEADERSHIP</h1>
     <h3>This is to certify that the student</h3>
-    <div class="student-name" id="winnerName">Loading...</div>
+    <div class="student-name" id="winnerName">Verifying...</div>
     
     <p class="details">
       has been duly elected as the <strong><span id="positionTitle">Leader</span></strong><br>
@@ -101,39 +101,49 @@
 </div>
 
 <script>
-  function loadCertData() {
+  async function loadCertData() {
     const session = JSON.parse(localStorage.getItem('activeSession'));
-    const db = JSON.parse(localStorage.getItem('voterwaDB'));
-    if(!session || !db) return;
+    if(!session) return window.location.href = 'login.html';
 
-    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
-    const votes = school.settings.votes || {};
-    const candidatesObj = school.settings.candidates || {};
-
-    // Logic: Find the specific category where THIS student won
-    let myRole = "Leader";
-    let found = false;
-
-    Object.keys(candidatesObj).forEach(cat => {
-      let winner = null; let max = -1;
-      candidatesObj[cat].forEach(c => {
-        let v = votes[c.id] || 0;
-        if(v > max) { max = v; winner = c; }
-      });
+    try {
+      // Fetch official data from the Python server
+      const response = await fetch('/api/get_db');
+      const db = await response.json();
       
-      // If the logged-in student name matches the winner of this category
-      if(winner && winner.first.toLowerCase() === session.userName.toLowerCase()) {
-        myRole = cat;
-        found = true;
-      }
-    });
+      const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+      const votes = school.settings.votes || {};
+      const candidatesObj = school.settings.candidates || {};
 
-    document.getElementById('winnerName').innerText = session.userName;
-    document.getElementById('positionTitle').innerText = myRole;
-    document.getElementById('certSchoolName').innerText = school.schoolName;
-    document.getElementById('currentYear').innerText = new Date().getFullYear();
-    document.getElementById('todayDate').innerText = "Date: " + new Date().toLocaleDateString('en-GB');
+      let myRole = "Leader";
+      let found = false;
+
+      // Check results from server data
+      Object.keys(candidatesObj).forEach(cat => {
+        let winner = null; 
+        let max = -1;
+        
+        candidatesObj[cat].forEach(c => {
+          let v = votes[c.id] || 0;
+          if(v > max) { max = v; winner = c; }
+        });
+        
+        if(winner && winner.first.toLowerCase() === session.userName.toLowerCase()) {
+          myRole = cat;
+          found = true;
+        }
+      });
+
+      document.getElementById('winnerName').innerText = session.userName;
+      document.getElementById('positionTitle').innerText = myRole;
+      document.getElementById('certSchoolName').innerText = school.schoolName;
+      document.getElementById('currentYear').innerText = new Date().getFullYear();
+      document.getElementById('todayDate').innerText = "Date: " + new Date().toLocaleDateString('en-GB');
+    } catch (err) {
+      document.getElementById('winnerName').innerText = "Error Loading Data";
+      console.error("Sync Error:", err);
+    }
   }
+  
   loadCertData();
 </script>
 </body>

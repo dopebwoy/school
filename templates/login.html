@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Voterwa School</title>
+  <style>
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #003366, #001a33);
+      color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .login-card {
+      background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3); width: 90%; max-width: 400px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    input {
+      width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: none;
+      font-size: 1rem; box-sizing: border-box; text-align: center;
+    }
+    button {
+      width: 100%; padding: 12px; background: #007bff; color: white; border: none;
+      border-radius: 8px; font-size: 1.1rem; cursor: pointer; font-weight: bold;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    .error { color: #ff4d4d; font-size: 0.9rem; margin-top: 10px; display: none; }
+    .loading-text { font-size: 0.8rem; color: #00bfff; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <h2>School Login</h2>
+    <p>Enter your Student or Teacher ID</p>
+    <input type="text" id="userId" placeholder="e.g. STD001 or TCH001">
+    <button id="loginBtn" onclick="handleLogin()">Continue</button>
+    <p id="loadingMsg" class="loading-text">Verifying with server...</p>
+    <p id="errorMsg" class="error">Invalid ID. Please contact your school admin.</p>
+  </div>
+
+  <script>
+    async function handleLogin() {
+      const idInput = document.getElementById('userId');
+      const id = idInput.value.trim().toUpperCase();
+      const loginBtn = document.getElementById('loginBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const loadingMsg = document.getElementById('loadingMsg');
+
+      if (!id) return;
+
+      // UI Feedback
+      errorMsg.style.display = 'none';
+      loadingMsg.style.display = 'block';
+      loginBtn.disabled = true;
+
+      try {
+        // 1. Fetch the latest database from the Python Server
+        const response = await fetch('/api/get_db');
+        const db = await response.json();
+        
+        if (!db || !db.schools) {
+          alert("Database not initialized on server. Please run setup.");
+          return;
+        }
+
+        let foundUser = null;
+        let userRole = '';
+        let schoolData = null;
+
+        // 2. Search server data for this ID
+        for (const school of db.schools) {
+          const teacher = school.teachers.find(t => t.code === id);
+          if (teacher) {
+            foundUser = teacher;
+            userRole = 'teacher';
+            schoolData = school;
+            break;
+          }
+          const student = school.students.find(s => s.code === id);
+          if (student) {
+            foundUser = student;
+            userRole = 'student';
+            schoolData = school;
+            break;
+          }
+        }
+
+        if (foundUser) {
+          const session = {
+            userCode: foundUser.code,
+            userName: foundUser.name,
+            role: userRole,
+            schoolCode: schoolData.schoolCode,
+            schoolName: schoolData.schoolName
+          };
+          
+          // Save session locally for navigation
+          localStorage.setItem('activeSession', JSON.stringify(session));
+          
+          // Redirect based on role
+          window.location.href = userRole === 'teacher' ? 'teacher-dashboard.html' : 'student-ballot.html';
+        } else {
+          errorMsg.style.display = 'block';
+        }
+      } catch (err) {
+        alert("Server connection error. Please try again.");
+        console.error(err);
+      } finally {
+        loadingMsg.style.display = 'none';
+        loginBtn.disabled = false;
+      }
+    }
+
+    // Allow pressing "Enter" to login
+    document.getElementById('userId').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+  </script>
+</body>
+</html>

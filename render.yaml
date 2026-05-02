@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: voterwa-app        # A unique name for your service
+    env: python
+    buildCommand: pip install -r requirement.txt
+    startCommand: gunicorn app:app
+    plan: free               # Optional: specify the free tier

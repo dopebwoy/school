@@ -43,7 +43,6 @@
   </div>
 
   <div class="section-flex">
-    <!-- Left Category (e.g. Male Candidates) -->
     <div class="card">
       <div class="category-header">
         <select id="leftSelect" onchange="loadCandidates('left')"></select>
@@ -53,7 +52,6 @@
       <button class="add-btn" style="width: 100%;" onclick="newCandidate('left')">Add Candidate</button>
     </div>
 
-    <!-- Right Category (e.g. Female Candidates) -->
     <div class="card">
       <div class="category-header">
         <select id="rightSelect" onchange="loadCandidates('right')"></select>
@@ -65,7 +63,7 @@
   </div>
 
   <div class="action-bar">
-    <button class="btn-save" onclick="saveAll()">Save All Changes</button>
+    <button class="btn-save" id="saveBtn" onclick="saveAll()">Save All Changes to Cloud</button>
   </div>
 </div>
 
@@ -74,16 +72,32 @@
   if(!session || session.role !== 'teacher') window.location.href = 'login.html';
   document.getElementById('schoolName').innerText = session.schoolName;
 
-  function getDB() { return JSON.parse(localStorage.getItem('voterwaDB')); }
-  function saveDB(db) { localStorage.setItem('voterwaDB', JSON.stringify(db)); }
+  // --- CLOUD SYNC FUNCTIONS ---
+  async function fetchDB() {
+    const res = await fetch('/api/get_db');
+    return await res.json();
+  }
 
-  function init() {
-    const db = getDB();
+  async function pushDB(db) {
+    await fetch('/api/save_db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(db)
+    });
+  }
+
+  // --- DASHBOARD LOGIC ---
+  async function init() {
+    const db = await fetchDB();
     const school = db.schools.find(s => s.schoolCode === session.schoolCode);
     const cats = school.settings.customCategories || { left: ["HEADBOY"], right: ["HEADGIRL"] };
     
     fillSelect('leftSelect', cats.left);
     fillSelect('rightSelect', cats.right);
+    
+    // Save locally temporarily for UI management
+    localStorage.setItem('voterwaDB', JSON.stringify(db));
+    
     loadCandidates('left');
     loadCandidates('right');
   }
@@ -98,7 +112,8 @@
     const sel = document.getElementById(side + 'Select');
     const grid = document.getElementById(side + 'Grid');
     grid.innerHTML = "";
-    const db = getDB();
+    
+    const db = JSON.parse(localStorage.getItem('voterwaDB'));
     const school = db.schools.find(s => s.schoolCode === session.schoolCode);
     const category = sel.value;
     const list = (school.settings.candidates || {})[category] || [];
@@ -146,16 +161,21 @@
     }
   }
 
-  function saveAll() {
-    const db = getDB();
+  async function saveAll() {
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.innerText = "Syncing...";
+    saveBtn.disabled = true;
+
+    // 1. Get current cloud state
+    const db = await fetchDB();
     const school = db.schools.find(s => s.schoolCode === session.schoolCode);
     
-    // Save Categories
+    // 2. Update Categories from UI
     const leftCats = Array.from(document.getElementById('leftSelect').options).map(o => o.value);
     const rightCats = Array.from(document.getElementById('rightSelect').options).map(o => o.value);
     school.settings.customCategories = { left: leftCats, right: rightCats };
 
-    // Save current visible candidates
+    // 3. Update current visible candidates from UI
     if(!school.settings.candidates) school.settings.candidates = {};
     ['left', 'right'].forEach(side => {
       const cat = document.getElementById(side + 'Select').value;
@@ -167,14 +187,20 @@
       }));
     });
 
-    saveDB(db);
-    alert("Saved successfully!");
+    // 4. Push to Python Server
+    await pushDB(db);
+    
+    saveBtn.innerText = "Save All Changes to Cloud";
+    saveBtn.disabled = false;
+    alert("✅ All changes saved to the server!");
   }
 
-  function logout() { localStorage.removeItem('activeSession'); window.location.href = 'index.html'; }
+  function logout() { 
+    localStorage.removeItem('activeSession'); 
+    window.location.href = 'index.html'; 
+  }
 
   init();
 </script>
-
 </body>
 </html>
