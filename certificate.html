@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Official Election Certificate</title>
+  <style>
+    /* 1. Global Reset for Printing */
+    * { box-sizing: border-box; }
+    body { font-family: 'Georgia', serif; background: #555; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    
+    /* 2. Optimized Certificate Container */
+    .certificate-border {
+      width: 842px; /* Standard A4 Landscape width */
+      height: 595px; /* Standard A4 Landscape height */
+      background: #003366; 
+      padding: 15px; 
+      border-radius: 10px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    }
+
+    .certificate-paper {
+      background: #fff; 
+      height: 100%; 
+      width: 100%; 
+      display: flex; 
+      flex-direction: column;
+      align-items: center; 
+      justify-content: center; 
+      position: relative;
+      border: 5px double #ffd700; 
+      border-radius: 5px;
+      padding: 20px;
+    }
+
+    .header-rw { color: #003366; font-size: 14px; letter-spacing: 4px; margin-bottom: 5px; }
+    h1 { font-size: 42px; color: #003366; margin: 5px 0; border-bottom: 2px solid #ffd700; padding-bottom: 5px; }
+    h3 { font-style: italic; font-weight: normal; margin: 15px 0 5px; font-size: 20px; }
+    .student-name { font-size: 44px; color: #b28d42; font-weight: bold; text-decoration: underline; margin: 5px 0; }
+    .details { font-size: 18px; line-height: 1.5; color: #444; width: 85%; text-align: center; }
+    
+    .footer { width: 85%; display: flex; justify-content: space-between; margin-top: 30px; align-items: flex-end; }
+    .sig-area { text-align: center; width: 220px; }
+    .sig-line { border-top: 2px solid #333; margin-bottom: 5px; }
+    .sig-title { font-size: 15px; font-weight: bold; color: #003366; }
+
+    .cachet-box {
+      width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #999; text-align: center; font-style: italic;
+    }
+
+    .controls { margin-bottom: 20px; width: 842px; display: flex; justify-content: space-between; }
+    .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold; }
+
+    /* 3. Critical Print Settings Fix */
+    @media print {
+      @page { size: landscape; margin: 0; }
+      body { padding: 0; background: white; }
+      .controls { display: none; }
+      .certificate-border { 
+        box-shadow: none; 
+        width: 100vw; 
+        height: 100vh; 
+        border-radius: 0;
+        padding: 10mm; /* Clean padding for printer margins */
+      }
+      .cachet-box { border-color: #eee; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="btn" style="background:#666; color:white;" onclick="history.back()">Go Back</button>
+  <button class="btn" style="background:#28a745; color:white;" onclick="window.print()">Print Official Certificate</button>
+</div>
+
+<div class="certificate-border">
+  <div class="certificate-paper">
+    <div class="header-rw">REPUBLIC OF RWANDA</div>
+    <h1>CERTIFICATE OF LEADERSHIP</h1>
+    <h3>This is to certify that the student</h3>
+    <div class="student-name" id="winnerName">Loading...</div>
+    
+    <p class="details">
+      has been duly elected as the <strong><span id="positionTitle">Leader</span></strong><br>
+      at <strong id="certSchoolName">School Name</strong> for the Year <span id="currentYear"></span>.<br>
+      This award recognizes their integrity, leadership, and the trust placed in them by the student body.
+    </p>
+
+    <div class="footer">
+      <div class="sig-area">
+        <div class="sig-line"></div>
+        <div class="sig-title">School Headteacher</div>
+        <div style="font-size: 12px; color: #666;" id="todayDate"></div>
+      </div>
+
+      <div class="cachet-box">Official School<br>Stamp / Cachet</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function loadCertData() {
+    const session = JSON.parse(localStorage.getItem('activeSession'));
+    const db = JSON.parse(localStorage.getItem('voterwaDB'));
+    if(!session || !db) return;
+
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const votes = school.settings.votes || {};
+    const candidatesObj = school.settings.candidates || {};
+
+    // Logic: Find the specific category where THIS student won
+    let myRole = "Leader";
+    let found = false;
+
+    Object.keys(candidatesObj).forEach(cat => {
+      let winner = null; let max = -1;
+      candidatesObj[cat].forEach(c => {
+        let v = votes[c.id] || 0;
+        if(v > max) { max = v; winner = c; }
+      });
+      
+      // If the logged-in student name matches the winner of this category
+      if(winner && winner.first.toLowerCase() === session.userName.toLowerCase()) {
+        myRole = cat;
+        found = true;
+      }
+    });
+
+    document.getElementById('winnerName').innerText = session.userName;
+    document.getElementById('positionTitle').innerText = myRole;
+    document.getElementById('certSchoolName').innerText = school.schoolName;
+    document.getElementById('currentYear').innerText = new Date().getFullYear();
+    document.getElementById('todayDate').innerText = "Date: " + new Date().toLocaleDateString('en-GB');
+  }
+  loadCertData();
+</script>
+</body>
+</html>

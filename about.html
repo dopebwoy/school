@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - Voterwa</title>
+  <style>
+    body {
+      margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: white; min-height: 100vh;
+      background: linear-gradient(rgba(0, 0, 50, 0.7), rgba(0, 0, 50, 0.7)), url('images/firstbackground.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+    }
+    .container { max-width: 900px; margin: 40px auto; padding: 20px; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 40px;
+      backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    h1 { color: #ffd700; font-size: 2.5rem; margin-bottom: 20px; border-left: 5px solid #007bff; padding-left: 15px; }
+    h2 { color: #00bfff; margin-top: 30px; }
+    p { line-height: 1.8; font-size: 1.1rem; color: #e0e0e0; }
+    .highlight-box {
+      background: rgba(0, 123, 255, 0.2); border-radius: 12px; padding: 20px;
+      margin: 25px 0; border: 1px solid rgba(0, 123, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <div class="container">
+    <div class="glass-card">
+      <h1>About Voterwa</h1>
+      <p>Voterwa is Rwanda’s premier digital voting solution designed specifically for primary and secondary schools. We believe that the leaders of tomorrow should be elected using the technology of today.</p>
+      
+      <div class="highlight-box">
+        <strong>Our Mission:</strong> To eliminate election fraud and paper waste in schools while teaching students the importance of a fair and transparent democratic process.
+      </div>
+
+      <h2>Why Choose Us?</h2>
+      <p>Traditional voting is slow and often leads to disputes. Voterwa provides an unhackable local-storage system that gives instant results. Whether it's electing a <strong>Head Boy</strong>, <strong>Head Girl</strong>, or <strong>Class Prefects</strong>, our platform ensures every student's voice is heard accurately.</p>
+    </div>
+  </div>
+
+  <script>
+    fetch('navbar.html').then(res => res.text()).then(data => {
+      document.getElementById('navbar-container').innerHTML = data;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elected Leaders - Voterwa</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #001a33; color: white; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+    h1 { color: #ffd700; margin: 0; font-size: 1.8rem; }
+    
+    .winner-card { 
+      background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; 
+      margin-bottom: 15px; display: flex; align-items: center; gap: 20px; 
+      border: 1px solid rgba(255,215,0,0.2); transition: 0.3s;
+    }
+    .winner-card:hover { background: rgba(255,255,255,0.1); border-color: #ffd700; }
+    .winner-card img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #ffd700; object-fit: cover; }
+    
+    .winner-info { flex: 1; }
+    .winner-info h3 { margin: 0; color: #ffd700; font-size: 1.4rem; }
+    .winner-info p { margin: 5px 0; opacity: 0.9; font-size: 1.1rem; }
+    .vote-count { font-size: 0.85rem; color: #00bfff; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .cert-btn { background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .cert-btn:hover { background: #218838; transform: scale(1.05); }
+    
+    .nav-link { color: #bbb; text-decoration: none; font-weight: bold; font-size: 0.9rem; }
+    .nav-link:hover { color: white; }
+    .btn-logout { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <a href="student-ballot.html" class="nav-link">← Back to Ballot</a>
+    <h1>🎉 Official Results</h1>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </header>
+
+  <div id="winnersList"></div>
+</div>
+
+<script>
+  function logout() {
+    localStorage.removeItem('activeSession');
+    window.location.href = 'login.html';
+  }
+
+  function loadWinners() {
+    const session = JSON.parse(localStorage.getItem('activeSession'));
+    const db = JSON.parse(localStorage.getItem('voterwaDB'));
+    
+    if(!session || !db) return window.location.href = 'login.html';
+
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const list = document.getElementById('winnersList');
+    const categories = Object.keys(school.settings.candidates || {});
+
+    if (categories.length === 0) {
+      list.innerHTML = "<p style='text-align:center;'>No election results available yet.</p>";
+      return;
+    }
+
+    categories.forEach(cat => {
+      let winner = null;
+      let maxVotes = -1;
+
+      school.settings.candidates[cat].forEach(cand => {
+        const v = (school.settings.votes || {})[cand.id] || 0;
+        if(v > maxVotes) {
+          maxVotes = v;
+          winner = cand;
+        }
+      });
+
+      // Only display if someone actually received a vote
+      if(winner && maxVotes > 0) {
+        const card = document.createElement('div');
+        card.className = 'winner-card';
+        
+        // Match logged in user name to winner name for certificate access
+        const isMe = (session.userName.toLowerCase() === winner.first.toLowerCase());
+        
+        card.innerHTML = `
+          <img src="${winner.img || 'https://placeholder.com'}">
+          <div class="winner-info">
+            <div class="vote-count">🏆 Winner with ${maxVotes} votes</div>
+            <h3>${winner.first}</h3>
+            <p>Elected as <strong>${cat}</strong></p>
+          </div>
+          ${isMe ? `<button class="cert-btn" onclick="location.href='certificate.html'">Download Certificate</button>` : ''}
+        `;
+        list.appendChild(card);
+      }
+    });
+  }
+
+  loadWinners();
+</script>
+</body>
+</html>

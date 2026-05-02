@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Results - Voterwa</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 0; background: #001a33; color: white; padding: 20px; }
+    h1 { text-align: center; color: #ffd700; margin-bottom: 30px; }
+    .table-container { max-width: 900px; margin: 0 auto; background: rgba(255,255,255,0.05); border-radius: 15px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { background: rgba(0,0,0,0.4); color: #ffd700; }
+    
+    .badge { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; color: #111; display: inline-block; }
+    .gold { background: linear-gradient(90deg, #ffd700, #ffec8b); }
+    .silver { background: linear-gradient(90deg, #c0c0c0, #e6e6e6); }
+    .bronze { background: linear-gradient(90deg, #cd7f32, #e0a370); }
+    .normal { background: rgba(255,255,255,0.8); }
+
+    .btn-back { display: block; width: 200px; margin: 20px auto; text-align: center; background: #007bff; color: white; text-decoration: none; padding: 10px; border-radius: 5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Live Election Results</h1>
+
+  <div class="table-container">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Candidate</th>
+          <th>Votes</th>
+          <th>Rank</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <a href="teacher-dashboard.html" class="btn-back">Back to Dashboard</a>
+
+  <script>
+    function loadResults() {
+      const session = JSON.parse(localStorage.getItem('activeSession'));
+      const db = JSON.parse(localStorage.getItem('voterwaDB'));
+      const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+      const settings = school.settings;
+      const tbody = document.querySelector('#resultsTable tbody');
+      tbody.innerHTML = "";
+
+      const categories = Object.keys(settings.candidates || {});
+
+      categories.forEach(cat => {
+        let candidatesList = settings.candidates[cat].map(c => ({
+          name: c.first,
+          votes: (settings.votes || {})[c.id] || 0
+        }));
+
+        // Sort candidates within the category by votes
+        candidatesList.sort((a, b) => b.votes - a.votes);
+
+        candidatesList.forEach((c, index) => {
+          const tr = document.createElement('tr');
+          let rankBadge = "normal";
+          let rankLabel = "Rank " + (index + 1);
+
+          if(c.votes > 0) {
+            if(index === 0) { rankBadge = "gold"; rankLabel = "🥇 Winner"; }
+            else if(index === 1) { rankBadge = "silver"; rankLabel = "🥈 2nd"; }
+            else if(index === 2) { rankBadge = "bronze"; rankLabel = "🥉 3rd"; }
+          }
+
+          tr.innerHTML = `
+            <td>${index === 0 ? `<strong>${cat}</strong>` : ""}</td>
+            <td>${c.name}</td>
+            <td><strong>${c.votes}</strong></td>
+            <td><span class="badge ${rankBadge}">${rankLabel}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    // Refresh results every 5 seconds for "Live" feel
+    setInterval(loadResults, 5000);
+    loadResults();
+  </script>
+</body>
+</html>

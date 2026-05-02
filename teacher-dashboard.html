@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard - Voterwa</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; color: #333; }
+    header { background: #003366; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .section-flex { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+    .card { background: white; border-radius: 12px; padding: 20px; flex: 1; min-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h2 { color: #003366; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; }
+    
+    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; width: 70%; }
+    .add-btn { background: #28a745; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; }
+    
+    .candidate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin: 15px 0; }
+    .candidate-item { text-align: center; position: relative; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+    .candidate-item img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #007bff; cursor: pointer; }
+    .candidate-item input { width: 100%; margin-top: 8px; border: 1px solid #ddd; border-radius: 4px; padding: 4px; font-size: 0.8rem; }
+    .del-icon { position: absolute; top: 2px; right: 2px; color: red; cursor: pointer; font-weight: bold; }
+
+    .action-bar { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+    .btn-save { background: #003366; color: white; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-nav { background: #6c757d; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; }
+    
+    @media (max-width: 600px) { .section-flex { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div id="schoolName">Voterwa Admin</div>
+  <button class="btn-nav" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+  <div class="action-bar" style="justify-content: flex-end;">
+    <a href="voting-settings.html" class="btn-nav">⚙️ Voting Settings</a>
+    <a href="school-results.html" class="btn-nav">📊 View Results</a>
+  </div>
+
+  <div class="section-flex">
+    <!-- Left Category (e.g. Male Candidates) -->
+    <div class="card">
+      <div class="category-header">
+        <select id="leftSelect" onchange="loadCandidates('left')"></select>
+        <button class="add-btn" onclick="addCategory('left')">+</button>
+      </div>
+      <div id="leftGrid" class="candidate-grid"></div>
+      <button class="add-btn" style="width: 100%;" onclick="newCandidate('left')">Add Candidate</button>
+    </div>
+
+    <!-- Right Category (e.g. Female Candidates) -->
+    <div class="card">
+      <div class="category-header">
+        <select id="rightSelect" onchange="loadCandidates('right')"></select>
+        <button class="add-btn" onclick="addCategory('right')">+</button>
+      </div>
+      <div id="rightGrid" class="candidate-grid"></div>
+      <button class="add-btn" style="width: 100%;" onclick="newCandidate('right')">Add Candidate</button>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-save" onclick="saveAll()">Save All Changes</button>
+  </div>
+</div>
+
+<script>
+  let session = JSON.parse(localStorage.getItem('activeSession'));
+  if(!session || session.role !== 'teacher') window.location.href = 'login.html';
+  document.getElementById('schoolName').innerText = session.schoolName;
+
+  function getDB() { return JSON.parse(localStorage.getItem('voterwaDB')); }
+  function saveDB(db) { localStorage.setItem('voterwaDB', JSON.stringify(db)); }
+
+  function init() {
+    const db = getDB();
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const cats = school.settings.customCategories || { left: ["HEADBOY"], right: ["HEADGIRL"] };
+    
+    fillSelect('leftSelect', cats.left);
+    fillSelect('rightSelect', cats.right);
+    loadCandidates('left');
+    loadCandidates('right');
+  }
+
+  function fillSelect(id, list) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    list.forEach(c => sel.appendChild(new Option(c, c)));
+  }
+
+  function loadCandidates(side) {
+    const sel = document.getElementById(side + 'Select');
+    const grid = document.getElementById(side + 'Grid');
+    grid.innerHTML = "";
+    const db = getDB();
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const category = sel.value;
+    const list = (school.settings.candidates || {})[category] || [];
+
+    list.forEach(c => {
+      grid.appendChild(createCandidateUI(c.first, c.img, c.id));
+    });
+  }
+
+  function createCandidateUI(name = "", img = "", id = "") {
+    const div = document.createElement('div');
+    div.className = 'candidate-item';
+    div.dataset.id = id || Date.now() + Math.random();
+    div.innerHTML = `
+      <span class="del-icon" onclick="this.parentElement.remove()">×</span>
+      <img src="${img || 'https://placeholder.com'}" onclick="uploadImg(this)">
+      <input type="text" value="${name}" placeholder="Name">
+    `;
+    return div;
+  }
+
+  function uploadImg(el) {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.onchange = e => {
+      const reader = new FileReader();
+      reader.onload = () => el.src = reader.result;
+      reader.readAsDataURL(e.target.files[0]);
+    };
+    inp.click();
+  }
+
+  function newCandidate(side) {
+    document.getElementById(side + 'Grid').appendChild(createCandidateUI());
+  }
+
+  function addCategory(side) {
+    const name = prompt("Enter category name:");
+    if(name) {
+      const sel = document.getElementById(side + 'Select');
+      sel.appendChild(new Option(name, name));
+      sel.value = name;
+      loadCandidates(side);
+    }
+  }
+
+  function saveAll() {
+    const db = getDB();
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    
+    // Save Categories
+    const leftCats = Array.from(document.getElementById('leftSelect').options).map(o => o.value);
+    const rightCats = Array.from(document.getElementById('rightSelect').options).map(o => o.value);
+    school.settings.customCategories = { left: leftCats, right: rightCats };
+
+    // Save current visible candidates
+    if(!school.settings.candidates) school.settings.candidates = {};
+    ['left', 'right'].forEach(side => {
+      const cat = document.getElementById(side + 'Select').value;
+      const items = Array.from(document.getElementById(side + 'Grid').children);
+      school.settings.candidates[cat] = items.map(div => ({
+        id: div.dataset.id,
+        first: div.querySelector('input').value,
+        img: div.querySelector('img').src
+      }));
+    });
+
+    saveDB(db);
+    alert("Saved successfully!");
+  }
+
+  function logout() { localStorage.removeItem('activeSession'); window.location.href = 'index.html'; }
+
+  init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!-- navbar.html -->
+<style>
+  :root {
+    --primary-blue: #003366;
+    --accent-gold: #ffd700;
+    --hover-blue: #0056b3;
+  }
+
+  .navbar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--primary-blue);
+    padding: 12px 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    color: white;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: white;
+  }
+
+  .nav-brand .logo {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));
+  }
+
+  .nav-brand .school-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .school-info .app-name {
+    font-weight: bold;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+  }
+
+  .school-info .current-school {
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-menu a {
+    color: white;
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: 0.3s;
+  }
+
+  .nav-menu a:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  .logout-btn {
+    background: #dc3545;
+    color: white !important;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+  }
+
+  .logout-btn:hover {
+    background: #a71d2a !important;
+  }
+
+  .menu-toggle {
+    display: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  /* Space filler so content doesn't hide under the fixed navbar */
+  .navbar-spacer {
+    height: 65px;
+  }
+
+  @media (max-width: 768px) {
+    .nav-menu {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--primary-blue);
+      width: 200px;
+      padding: 20px;
+      box-shadow: -5px 5px 10px rgba(0,0,0,0.2);
+      border-radius: 0 0 0 15px;
+    }
+
+    .nav-menu.active {
+      display: flex;
+    }
+
+    .menu-toggle {
+      display: block;
+    }
+
+    .school-info .current-school {
+      max-width: 100px;
+    }
+  }
+</style>
+
+<div class="navbar-wrapper">
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <div class="logo">🗳️</div>
+      <div class="school-info">
+        <span class="app-name">Voterwa</span>
+        <span id="navSchoolName" class="current-school">primary || Secondary School</span>
+      </div>
+    </a>
+
+    <div class="menu-toggle" onclick="toggleNav()">☰</div>
+
+    <div class="nav-menu" id="navMenu">
+      <a href="index.html">Home</a>
+      <a href="service.html">Services</a>
+      <a href="about.html">About</a>
+      <a href="help.html">Help</a>
+      <a href="contact.html">Contact</a>
+      <button id="navLogout" class="nav-menu logout-btn" onclick="navLogout()" style="display:none;">Logout</button>
+    </div>
+  </nav>
+</div>
+<div class="navbar-spacer"></div>
+
+<script>
+  function toggleNav() {
+    document.getElementById('navMenu').classList.toggle('active');
+  }
+
+  function navLogout() {
+    localStorage.removeItem('activeSession');
+    window.location.href = 'index.html';
+  }
+
+  // Navbar Logic: Updates based on Session
+  (function initNavbar() {
+    const session = JSON.parse(localStorage.getItem('activeSession'));
+    const schoolLabel = document.getElementById('navSchoolName');
+    const logoutBtn = document.getElementById('navLogout');
+
+    if (session) {
+      schoolLabel.innerText = session.schoolName;
+      logoutBtn.style.display = 'block';
+      
+      // Update Dashboard Link based on role
+      const homeLink = document.querySelector('.nav-menu a[href="index.html"]');
+      if (session.role === 'teacher') {
+        homeLink.href = 'teacher-dashboard.html';
+        homeLink.innerText = 'Dashboard';
+      } else if (session.role === 'student') {
+        homeLink.href = 'student-ballot.html';
+        homeLink.innerText = 'Vote';
+      }
+    } else {
+      schoolLabel.innerText = "School Portal";
+      logoutBtn.style.display = 'none';
+    }
+  })();
+</script>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voterwa - School Elections</title>
+  <style>
+    body {
+      margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white; min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      background: linear-gradient(rgba(0, 0, 255, 0.4), rgba(0, 0, 50, 0.8)), url('images/firstbackground.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+    }
+    .hero { padding: 20px; max-width: 600px; }
+    h1 { font-size: 3.5rem; margin-bottom: 10px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+    p { font-size: 1.2rem; margin-bottom: 30px; opacity: 0.9; }
+    .btn-group { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      padding: 15px 40px; font-size: 1.1rem; border-radius: 50px; border: none;
+      cursor: pointer; text-decoration: none; font-weight: bold; transition: 0.3s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; transform: translateY(-3px); }
+    .btn-outline { background: rgba(255,255,255,0.1); color: white; border: 2px solid white; }
+    .btn-outline:hover { background: white; color: #003366; }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 2.5rem; }
+      .btn { width: 80%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <h1>VoteRwa</h1>
+    <p>The most trusted digital voting platform for Rwandan Secondary and Primary Schools.</p>
+    
+    <div class="btn-group">
+      <a href="login.html" class="btn btn-primary">Start Voting</a>
+      <a href="about.html" class="btn btn-outline">Learn More</a>
+    </div>
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    window.onload = () => {
+      const active = JSON.parse(localStorage.getItem('activeSession'));
+      if (active) {
+        window.location.href = active.role === 'teacher' ? 'teacher-dashboard.html' : 'student-ballot.html';
+      }
+    };
+  </script>
+</body>
+</html>

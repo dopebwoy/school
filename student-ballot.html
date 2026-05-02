@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Portal - Voterwa</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7fa; padding-bottom: 50px; }
+    header { background: #003366; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .nav-btns { display: flex; gap: 10px; }
+    .btn-header { padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 0.9rem; }
+    .btn-logout { background: #3f2426; color: white; }
+    .btn-elected { background: #02c765; color: #003366; }
+    
+    .container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
+    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    h2 { color: #003366; margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+    .instruction { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; }
+    .candidate-row { display: flex; align-items: center; gap: 15px; padding: 15px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+    .candidate-row.selected { background: #e7f3ff; border-color: #007bff; }
+    .candidate-row img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+    .submit-btn { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 50px; font-size: 1.2rem; cursor: pointer; width: 100%; font-weight: bold; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div id="stdName">Voter: Loading...</div>
+  <div class="nav-btns">
+    <a href="elected-students.html" class="btn-header btn-elected">🏆 Elected</a>
+    <button class="btn-header btn-logout" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="adminMsg" class="instruction">Loading session...</div>
+  <div id="votingArea"></div>
+  <button id="submitBtn" class="submit-btn" onclick="submitVotes()">Submit My Votes</button>
+</div>
+
+<script>
+  let session = JSON.parse(localStorage.getItem('activeSession'));
+  if(!session || session.role !== 'student') window.location.href = 'login.html';
+  document.getElementById('stdName').innerText = "Hi, " + session.userName;
+
+  function logout() { localStorage.removeItem('activeSession'); window.location.href = 'login.html'; }
+
+  function loadBallot() {
+    const db = JSON.parse(localStorage.getItem('voterwaDB'));
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const settings = school.settings;
+
+    if(settings.votedStudents && settings.votedStudents[session.userCode]) {
+      document.getElementById('adminMsg').innerHTML = "✅ <strong>You have already voted!</strong> You can check the winners by clicking the <strong>Elected</strong> button above.";
+      document.getElementById('submitBtn').style.display = 'none';
+      return;
+    }
+
+    if(settings.electionStatus !== 'started') {
+      document.getElementById('adminMsg').innerText = "The election is currently closed.";
+      document.getElementById('submitBtn').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('adminMsg').innerText = settings.adminMessage || "Please cast your vote carefully.";
+    const area = document.getElementById('votingArea');
+    const categories = Object.keys(settings.candidates || {});
+
+    categories.forEach(cat => {
+      const candidates = settings.candidates[cat];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h2>${cat}</h2>`;
+
+      candidates.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'candidate-row';
+        row.innerHTML = `
+          <img src="${c.img || 'https://placeholder.com'}">
+          <strong>${c.first}</strong>
+          <input type="radio" name="${cat}" value="${c.id}" style="margin-left:auto; transform:scale(1.5);">
+        `;
+        row.onclick = () => {
+          row.parentElement.querySelectorAll('.candidate-row').forEach(r => r.classList.remove('selected'));
+          row.classList.add('selected');
+          row.querySelector('input').checked = true;
+        };
+        card.appendChild(row);
+      });
+      area.appendChild(card);
+    });
+  }
+
+  function submitVotes() {
+    const db = JSON.parse(localStorage.getItem('voterwaDB'));
+    const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+    const radios = document.querySelectorAll('input[type="radio"]:checked');
+    const totalCats = Object.keys(school.settings.candidates).length;
+
+    if(radios.length < totalCats) { return alert("Please vote in all categories!"); }
+    if(!confirm("Submit your votes? This cannot be undone.")) return;
+
+    if(!school.settings.votes) school.settings.votes = {};
+    radios.forEach(r => school.settings.votes[r.value] = (school.settings.votes[r.value] || 0) + 1);
+
+    if(!school.settings.votedStudents) school.settings.votedStudents = {};
+    school.settings.votedStudents[session.userCode] = true;
+
+    localStorage.setItem('voterwaDB', JSON.stringify(db));
+    alert("Votes recorded!");
+    location.reload();
+  }
+
+  loadBallot();
+</script>
+</body>
+</html>

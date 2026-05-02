@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voting Settings - Voterwa</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h2 { color: #003366; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    
+    .status-box { padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; }
+    .status-started { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status-stopped { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    
+    .voter-list { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 15px 0; background: #fafafa; }
+    .voter-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+    .voter-item:last-child { border-bottom: none; }
+    .voter-item input { margin-right: 15px; transform: scale(1.2); }
+
+    textarea { width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 15px; font-family: inherit; }
+    
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+    button { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: #003366; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-back { background: #6c757d; color: white; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="teacher-dashboard.html" class="btn-back">← Back to Dashboard</a>
+  <h2>Election Controls & Authorization</h2>
+
+  <div id="statusIndicator" class="status-box">
+    <span>Status: <strong id="statusText">Stopped</strong></span>
+    <div>
+      <button class="btn-success" onclick="updateStatus('started')">Start Election</button>
+      <button class="btn-danger" onclick="updateStatus('stopped')">Stop Election</button>
+    </div>
+  </div>
+
+  <h3>📢 Admin Message for Students</h3>
+  <textarea id="adminMsgInput" placeholder="Enter instructions or messages for the students..."></textarea>
+  <button class="btn-primary" onclick="saveMessage()">Save Message</button>
+
+  <hr>
+
+  <h3>👥 Authorized Voters</h3>
+  <p>Select which students are allowed to vote in this session:</p>
+  <div class="voter-list" id="voterList"></div>
+  <button class="btn-primary" style="width: 100%;" onclick="saveVoters()">Authorize Selected Students</button>
+</div>
+
+<script>
+  let session = JSON.parse(localStorage.getItem('activeSession'));
+  const db = JSON.parse(localStorage.getItem('voterwaDB'));
+  const school = db.schools.find(s => s.schoolCode === session.schoolCode);
+
+  function loadSettings() {
+    const settings = school.settings;
+    document.getElementById('statusText').innerText = settings.electionStatus === 'started' ? 'LIVE' : 'Stopped';
+    document.getElementById('statusIndicator').className = 'status-box ' + (settings.electionStatus === 'started' ? 'status-started' : 'status-stopped');
+    document.getElementById('adminMsgInput').value = settings.adminMessage || "";
+
+    const list = document.getElementById('voterList');
+    list.innerHTML = "";
+    const authorized = settings.allowedVoters || [];
+
+    school.students.forEach(std => {
+      const div = document.createElement('div');
+      div.className = 'voter-item';
+      div.innerHTML = `
+        <input type="checkbox" value="${std.code}" ${authorized.includes(std.code) ? 'checked' : ''}>
+        <span>${std.code} — ${std.name}</span>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function updateStatus(val) {
+    school.settings.electionStatus = val;
+    localStorage.setItem('voterwaDB', JSON.stringify(db));
+    loadSettings();
+    alert("Election is now " + val);
+  }
+
+  function saveMessage() {
+    school.settings.adminMessage = document.getElementById('adminMsgInput').value;
+    localStorage.setItem('voterwaDB', JSON.stringify(db));
+    alert("Message saved!");
+  }
+
+  function saveVoters() {
+    const checked = Array.from(document.querySelectorAll('#voterList input:checked')).map(i => i.value);
+    school.settings.allowedVoters = checked;
+    localStorage.setItem('voterwaDB', JSON.stringify(db));
+    alert("Authorization list updated!");
+  }
+
+  loadSettings();
+</script>
+</body>
+</html>
