@@ -19,27 +19,80 @@
     <div id="status" class="status">Waiting...</div>
   </div>
 
-  <script>
+    <script>
     async function initializeDB() {
       const db = {
-        schools: [{
-          schoolCode: "SCH001",
-          schoolName: "ES Rugabano High School",
-          teachers: [{ code: "TCH001", name: "Mr. Severien" }],
-          students: [
-            { code: "STD001", name: "Dopebwoy" },
-            { code: "STD002", name: "Moses" },
-            { code: "STD003", name: "Aline" }
-          ],
-          settings: {
-            electionStatus: "stopped",
-            adminMessage: "Welcome to our 2026 Elections!",
-            customCategories: { left: ["HEADBOY"], right: ["HEADGIRL"] },
-            candidates: {},
-            votes: {},
-            votedStudents: {}
+        schools: [
+          {
+            schoolCode: "SCH001",
+            schoolName: "ES Rugabano High School",
+            teachers: [{ code: "TCH001", name: "Mr. Severien" }],
+            students: [
+              { code: "STD001", name: "Dopebwoy" },
+              { code: "STD002", name: "Moses" },
+              { code: "STD003", name: "Aline" }
+            ],
+            settings: {
+              electionStatus: "stopped",
+              adminMessage: "Welcome to our 2026 Elections!",
+              customCategories: { left: ["HEADBOY"], right: ["HEADGIRL"] },
+              candidates: {},
+              votes: {},
+              votedStudents: {}
+            }
+          },
+          {
+            schoolCode: "SCH002",
+            schoolName: "Kigali International School",
+            teachers: [{ code: "TCH002", name: "Mrs. Uwase" }],
+            students: [
+              { code: "STD201", name: "Kevin" },
+              { code: "STD202", name: "Sonia" }
+            ],
+            settings: {
+              electionStatus: "stopped",
+              adminMessage: "Student Council Elections 2026",
+              customCategories: { left: ["PRESIDENT"], right: ["VICE PRESIDENT"] },
+              candidates: {},
+              votes: {},
+              votedStudents: {}
+            }
+          },
+          {
+            schoolCode: "SCH003",
+            schoolName: "Musanze Science Academy",
+            teachers: [{ code: "TCH003", name: "Mr. Habimana" }],
+            students: [
+              { code: "STD301", name: "Jean" },
+              { code: "STD302", name: "Marie" }
+            ],
+            settings: {
+              electionStatus: "stopped",
+              adminMessage: "Science Academy Prefect Elections",
+              customCategories: { left: ["HEADBOY"], right: ["HEADGIRL"] },
+              candidates: {},
+              votes: {},
+              votedStudents: {}
+            }
+          },
+          {
+            schoolCode: "SCH004",
+            schoolName: "Gisenyi Technical College",
+            teachers: [{ code: "TCH004", name: "Ms. Mukamana" }],
+            students: [
+              { code: "STD401", name: "Eric" },
+              { code: "STD402", name: "Gisele" }
+            ],
+            settings: {
+              electionStatus: "stopped",
+              adminMessage: "Welcome to GTC Elections",
+              customCategories: { left: ["GUILD PRESIDENT"], right: ["SPEAKER"] },
+              candidates: {},
+              votes: {},
+              votedStudents: {}
+            }
           }
-        }]
+        ]
       };
 
       document.getElementById('status').innerText = "Connecting to server...";
@@ -52,7 +105,7 @@
         });
 
         if (response.ok) {
-          document.getElementById('status').innerText = "✅ Success! Server Database Created.";
+          document.getElementById('status').innerText = "✅ Success! 4 Schools Initialized.";
           document.getElementById('status').style.color = "green";
           setTimeout(() => { window.location.href = 'index.html'; }, 1500);
         }
@@ -61,5 +114,6 @@
       }
     }
   </script>
+
 </body>
 </html>
