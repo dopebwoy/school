@@ -3,8 +3,10 @@ import os
 import smtplib  # Added to catch specific mail errors
 from flask import Flask, render_template, request, jsonify
 from flask_mailman import Mail, EmailMessage
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 DB_FILE = 'voterwa_db.json'
 
 # --- EMAIL CONFIGURATION ---
