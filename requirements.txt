@@ -2,3 +2,5 @@ flask
 gunicorn
 flask-mailman
 flask-cors
+Flask-SQLAlchemy
+psycopg2-binary

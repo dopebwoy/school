@@ -1,37 +1,45 @@
-import json
 import os
 import smtplib
 from flask import Flask, render_template, request, jsonify
 from flask_mailman import Mail, EmailMessage
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 CORS(app)
-DB_FILE = 'voterwa_db.json'
 
-# --- FIXED EMAIL CONFIGURATION ---
+# --- DATABASE CONFIGURATION ---
+# This looks for your DATABASE_URL and fixes the 'postgres://' prefix for SQLAlchemy
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# --- DATABASE MODEL ---
+# This replaces your JSON file structure
+class VoterData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # We store the entire JSON object in one column to keep your logic the same
+    content = db.Column(db.JSON, nullable=False)
+
+# Create the database table automatically if it doesn't exist
+with app.app_context():
+    db.create_all()
+
+# --- EMAIL CONFIGURATION ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-# Port 465 requires SSL=True. Port 587 requires TLS=True.
-# Use 465 + SSL as it is often more stable on cloud servers like Render.
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER') 
 app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS') 
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
-# Added a connection timeout to prevent long hangs
 app.config['MAIL_TIMEOUT'] = 15 
 
 mail = Mail(app)
-
-def get_db():
-    if not os.path.exists(DB_FILE):
-        return {"schools": []}
-    try:
-        with open(DB_FILE, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {"schools": []}
 
 @app.route('/')
 def index():
@@ -56,26 +64,29 @@ def handle_contact():
         
         msg.send()
         return jsonify({"status": "success"})
-
-    except smtplib.SMTPAuthenticationError:
-        return jsonify({"status": "error", "message": "Login failed. Verify your App Password on Google."}), 401
     except Exception as e:
-        print(f"DEBUG: Mail delivery failed: {str(e)}")
-        return jsonify({"status": "error", "message": f"Connection error: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/save_db', methods=['POST'])
 def save_data():
     try:
         data = request.get_json()
-        with open(DB_FILE, 'w') as f:
-            json.dump(data, f, indent=4)
+        # Clear old data and save new (simplest way to mimic your JSON file)
+        VoterData.query.delete() 
+        new_entry = VoterData(content=data)
+        db.session.add(new_entry)
+        db.session.commit()
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/get_db')
 def get_data():
-    return jsonify(get_db())
+    # Pull the latest data from Postgres
+    record = VoterData.query.order_by(VoterData.id.desc()).first()
+    if record:
+        return jsonify(record.content)
+    return jsonify({"schools": []}) # Return empty if no data exists yet
 
 @app.route('/<path:page>')
 def show_page(page):
