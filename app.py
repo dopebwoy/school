@@ -1,6 +1,6 @@
 import json
 import os
-import smtplib  # Added to catch specific mail errors
+import smtplib
 from flask import Flask, render_template, request, jsonify
 from flask_mailman import Mail, EmailMessage
 from flask_cors import CORS
@@ -9,15 +9,19 @@ app = Flask(__name__)
 CORS(app)
 DB_FILE = 'voterwa_db.json'
 
-# --- EMAIL CONFIGURATION ---
-# FIXED: Changed '://gmail.com' to 'smtp.gmail.com'
-app.config['MAIL_SERVER'] = 'smtp.gmail.com' 
-app.config['MAIL_PORT'] = 587
+# --- FIXED EMAIL CONFIGURATION ---
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+# Option A: Use Port 465 with SSL (Very stable for Render)
+app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True  
+app.config['MAIL_USE_SSL'] = True
+# Option B (If A fails): Use Port 587, set SSL=False, TLS=True
+
 app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER') 
 app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS') 
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
+# Added a timeout to prevent the "Worker Timeout" crash
+app.config['MAIL_TIMEOUT'] = 10 
 
 mail = Mail(app)
 
@@ -38,6 +42,9 @@ def index():
 def handle_contact():
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No data received"}), 400
+
         school = data.get('school_name', 'Unknown School')
         sender_email = data.get('email', 'No email provided')
         message_body = data.get('message', '')
@@ -52,24 +59,18 @@ def handle_contact():
         return jsonify({"status": "success"})
 
     except smtplib.SMTPAuthenticationError:
-        return jsonify({"status": "error", "message": "Email login failed. Check your App Password."}), 401
-    except smtplib.SMTPConnectError:
-        return jsonify({"status": "error", "message": "Could not connect to Gmail. Try Port 587 or 465."}), 503
+        return jsonify({"status": "error", "message": "Login failed. Check App Password."}), 401
     except Exception as e:
-        # This catches "Name or service not known" and other general errors
-        print(f"DEBUG ERROR: {str(e)}") 
-        return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
+        print(f"MAIL ERROR: {str(e)}") 
+        return jsonify({"status": "error", "message": "Mail server busy. Please try again."}), 500
 
 @app.route('/api/save_db', methods=['POST'])
 def save_data():
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"status": "error", "message": "No data received"}), 400
-            
         with open(DB_FILE, 'w') as f:
             json.dump(data, f, indent=4)
-        return jsonify({"status": "success", "message": "Database Initialized"})
+        return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
