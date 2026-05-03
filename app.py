@@ -11,17 +11,16 @@ DB_FILE = 'voterwa_db.json'
 
 # --- FIXED EMAIL CONFIGURATION ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-# Option A: Use Port 465 with SSL (Very stable for Render)
+# Port 465 requires SSL=True. Port 587 requires TLS=True.
+# Use 465 + SSL as it is often more stable on cloud servers like Render.
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
-# Option B (If A fails): Use Port 587, set SSL=False, TLS=True
-
 app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER') 
 app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS') 
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
-# Added a timeout to prevent the "Worker Timeout" crash
-app.config['MAIL_TIMEOUT'] = 10 
+# Added a connection timeout to prevent long hangs
+app.config['MAIL_TIMEOUT'] = 15 
 
 mail = Mail(app)
 
@@ -59,10 +58,10 @@ def handle_contact():
         return jsonify({"status": "success"})
 
     except smtplib.SMTPAuthenticationError:
-        return jsonify({"status": "error", "message": "Login failed. Check App Password."}), 401
+        return jsonify({"status": "error", "message": "Login failed. Verify your App Password on Google."}), 401
     except Exception as e:
-        print(f"MAIL ERROR: {str(e)}") 
-        return jsonify({"status": "error", "message": "Mail server busy. Please try again."}), 500
+        print(f"DEBUG: Mail delivery failed: {str(e)}")
+        return jsonify({"status": "error", "message": f"Connection error: {str(e)}"}), 500
 
 @app.route('/api/save_db', methods=['POST'])
 def save_data():

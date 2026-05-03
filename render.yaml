@@ -1,7 +1,8 @@
 services:
   - type: web
-    name: voterwa-app        # A unique name for your service
+    name: voterwa-app
     env: python
-    buildCommand: pip install -r requirement.txt
-    startCommand: gunicorn app:app
-    plan: free               # Optional: specify the free tier
+    buildCommand: pip install -r requirements.txt
+    # Added --timeout 90 to prevent the 'Worker Timeout' error
+    startCommand: gunicorn --timeout 90 app:app
+    plan: free
